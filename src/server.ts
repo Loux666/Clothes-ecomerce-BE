@@ -1,0 +1,35 @@
+import express, { Request, Response } from 'express';
+import webRoute from './routes/web';
+import dotenv from 'dotenv';
+import path from 'path';
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
+
+// Import cấu hình database để test kết nối khi chạy server
+import './config/database';
+
+const app = express();
+
+app.use(express.static(path.join(__dirname, 'public')));
+dotenv.config();
+
+const PORT = process.env.PORT || 3000;
+
+// Middleware để parse JSON
+app.use(express.json());
+
+app.use(cors({
+    origin: 'http://localhost:5173', // Cổng Ionic App
+    credentials: true // Cho phép gửi kèm Cookie
+}));
+
+app.use(cookieParser());
+
+// Gắn các đường dẫn
+import apiRoute from './routes/api';
+app.use('/', webRoute);
+app.use('/api', apiRoute); // Mọi API đều có tiền tố /api, ví dụ: /api/login
+// Bật server lên và nghe ở cổng 3000
+app.listen(PORT, () => {
+    console.log(`Server đang chạy tại: http://localhost:${PORT}`);
+});

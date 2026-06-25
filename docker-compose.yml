@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  # --- ĐÃ COMMENT PHẦN CHẠY CODE BẰNG DOCKER ---
+  # web:
+  #   build: .
+  #   container_name: hotel_backend
+  #   restart: always
+  #   ports:
+  #     - "3000:3000"
+  #   volumes:
+  #     - .:/app
+  #     - /app/node_modules # Giữ lại node_modules bên trong container không bị đè
+  #   environment:
+  #     - PORT=3000
+  #     - NODE_ENV=development
+  #   depends_on:
+  #     - db
+
+  # 2. Container chạy MySQL
+  db:
+    image: mysql:8.0
+    container_name: clothes_database
+    restart: always
+    ports:
+      - "3307:3306" # Ánh xạ cổng 3306 bên trong ra cổng 3307 ngoài máy để ông kết nối bằng TablePlus/Navicat
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: clothes_db # Docker tự tạo luôn DB tên này khi khởi chạy lần đầu
+      MYSQL_USER: clothes_user
+      MYSQL_PASSWORD: 123456
+    volumes:
+      - clothes_data:/var/lib/mysql
+
+volumes:
+  clothes_data: # Giữ lại dữ liệu DB không bị mất khi tắt docker
