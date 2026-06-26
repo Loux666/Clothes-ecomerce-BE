@@ -7,13 +7,13 @@ interface updateUserDto {
     name: string;
     email: string;
     password: string;
-    phone: string;
-    usertype: string;
+    phone?: string;
+    role?: 'USER' | 'ADMIN';
 }
 
 export const loginUser = async (email: string, password: string) => {
     // 1. Tìm user trong bảng 'users' (vừa kéo từ DB về)
-    const user = await prisma.users.findUnique({
+    const user = await prisma.user.findUnique({
         where: { email: email }
     });
 
@@ -26,7 +26,7 @@ export const loginUser = async (email: string, password: string) => {
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 phút
 
-        await prisma.users.update({
+        await prisma.user.update({
             where: { id: user.id },
             data: { otp_code: otp, otp_expires_at: expiresAt }
         });
@@ -40,7 +40,10 @@ export const loginUser = async (email: string, password: string) => {
     }
 
     // 2. Kiểm tra mật khẩu
-    // Do mật khẩu từ Laravel cũ thường được hash bằng bcrypt, nên lệnh compare này sẽ hoạt động tốt!
+    if (!user.password) {
+        throw new Error('Tài khoản chưa được thiết lập mật khẩu (có thể đăng nhập qua Google/Facebook)');
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
         throw new Error('Sai mật khẩu');
@@ -48,22 +51,18 @@ export const loginUser = async (email: string, password: string) => {
 
     // 3. Tạo Token (thời hạn 30 phút)
     const accessToken = jwt.sign(
-        { id: Number(user.id), role: user.usertype },
+        { id: user.id, role: user.role },
         process.env.ACCESS_SECRET || 'access token',
         { expiresIn: '30m' }
     );
     const refreshToken = jwt.sign(
-        { id: Number(user.id), role: user.usertype },
+        { id: user.id, role: user.role },
         process.env.REFRESH_SECRET || 'refresh token',
         { expiresIn: '7d' }
     );
 
     // Trả về thông tin user (nhưng giấu password đi) và token
-    const { password: _, id, ...otherInfo } = user;
-    const userInfo = {
-        id: Number(id), // Convert BigInt sang Number để không bị lỗi JSON.stringify
-        ...otherInfo
-    };
+    const { password: _, ...userInfo } = user;
 
     return { user: userInfo, accessToken, refreshToken };
 };
@@ -72,7 +71,7 @@ export const registerUser = async (data: any) => {
     const { name, email, password, phone } = data;
 
     //Check trung email
-    const existingUser = await prisma.users.findUnique({
+    const existingUser = await prisma.user.findUnique({
         where: { email: email }
     });
     if (existingUser) {
@@ -88,13 +87,13 @@ export const registerUser = async (data: any) => {
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 phút
 
     // Luu thong tin vao DB kèm OTP
-    const user = await prisma.users.create({
+    const user = await prisma.user.create({
         data: {
             name: name,
             email: email,
             password: hashedPassword,
             phone: phone,
-            usertype: 'user',
+            role: 'USER',
             otp_code: otp,
             otp_expires_at: expiresAt
         }
@@ -103,16 +102,12 @@ export const registerUser = async (data: any) => {
     // Gửi email thật qua Nodemailer
     await sendOtpEmail(email, otp);
 
-    const { password: _, id, ...otherInfo } = user;
-    const cleanUser = {
-        id: Number(id),
-        ...otherInfo
-    };
+    const { password: _, ...cleanUser } = user;
     return { success: true, data: cleanUser };
 };
 
 export const verifyOtpService = async (email: string, otp: string) => {
-    const user = await prisma.users.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user) {
         throw new Error('Email không tồn tại');
@@ -127,7 +122,7 @@ export const verifyOtpService = async (email: string, otp: string) => {
     }
 
     // OTP đúng, cập nhật trạng thái verified và xóa OTP
-    const updatedUser = await prisma.users.update({
+    const updatedUser = await prisma.user.update({
         where: { id: user.id },
         data: {
             email_verified_at: new Date(),
@@ -138,27 +133,23 @@ export const verifyOtpService = async (email: string, otp: string) => {
 
     // Tạo token cho phép login luôn
     const accessToken = jwt.sign(
-        { id: Number(updatedUser.id), role: updatedUser.usertype },
+        { id: updatedUser.id, role: updatedUser.role },
         process.env.ACCESS_SECRET || 'access token',
         { expiresIn: '30m' }
     );
     const refreshToken = jwt.sign(
-        { id: Number(updatedUser.id), role: updatedUser.usertype },
+        { id: updatedUser.id, role: updatedUser.role },
         process.env.REFRESH_SECRET || 'refresh token',
         { expiresIn: '7d' }
     );
 
-    const { password: _, id, ...otherInfo } = updatedUser;
-    const userInfo = {
-        id: Number(id),
-        ...otherInfo
-    };
+    const { password: _, ...userInfo } = updatedUser;
 
     return { user: userInfo, accessToken, refreshToken };
 };
 
-export const getProfile = async (userId: number) => {
-    const user = await prisma.users.findUnique({
+export const getProfile = async (userId: string) => {
+    const user = await prisma.user.findUnique({
         where: { id: userId }
     });
 
@@ -167,17 +158,13 @@ export const getProfile = async (userId: number) => {
     }
 
     // Trả về thông tin user (nhưng giấu password đi)
-    const { password: _, id, ...otherInfo } = user;
-    const userInfo = {
-        id: Number(id), // Convert BigInt sang Number để không bị lỗi JSON.stringify
-        ...otherInfo
-    };
+    const { password: _, ...userInfo } = user;
 
     return userInfo;
 };
 
-export const updateProfile = async (userId: number, data: updateUserDto) => {
-    const existingUser = await prisma.users.findUnique({
+export const updateProfile = async (userId: string, data: updateUserDto) => {
+    const existingUser = await prisma.user.findUnique({
         where: { id: userId }
     });
     if (!existingUser) {
@@ -191,7 +178,7 @@ export const updateProfile = async (userId: number, data: updateUserDto) => {
     }
 
     if (data.email && data.email !== existingUser.email) {
-        const userWithSameEmail = await prisma.users.findUnique({
+        const userWithSameEmail = await prisma.user.findUnique({
             where: { email: data.email }
         });
 
@@ -200,14 +187,14 @@ export const updateProfile = async (userId: number, data: updateUserDto) => {
         }
     }
 
-    const updateUser = await prisma.users.update({
+    const updateUser = await prisma.user.update({
         where: { id: userId },
         data: {
             name: data.name,
             email: data.email,
             password: data.password,
             phone: data.phone,
-            usertype: data.usertype
+            role: data.role
         }
     })
 

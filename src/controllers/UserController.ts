@@ -1,13 +1,12 @@
 import { Request, Response } from 'express';
 import { getProfile } from '../services/AuthService';
 import { AuthRequest } from '../middlewares/authMiddleware';
-import prisma from '../config/prisma';
 import { updateProfile } from '../services/AuthService';
 
 export const getUserProfile = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const userId = req.user.id;
-        const result = await getProfile(Number(userId));
+        const result = await getProfile(String(userId));
 
         res.json({
             message: 'Lấy thông tin người dùng thành công',
@@ -16,7 +15,7 @@ export const getUserProfile = async (req: AuthRequest, res: Response): Promise<v
                 email: result.email,
                 name: result.name,
                 phone: result.phone,
-                usertype: result.usertype
+                role: result.role
             }
         });
     } catch (error: any) {
@@ -26,14 +25,14 @@ export const getUserProfile = async (req: AuthRequest, res: Response): Promise<v
 export const updateUserProfile = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const userId = req.user.id;
-        const { name, email, password, phone, usertype } = req.body;
+        const { name, email, password, phone, role } = req.body;
 
-        const user = await updateProfile(Number(userId), {
+        const user = await updateProfile(String(userId), {
             name: name,
             email: email,
             password: password,
             phone: phone,
-            usertype: usertype
+            role: role
         });
 
         res.status(200).json({
