@@ -31,7 +31,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
                 email: result.user.email,
                 name: result.user.name,
                 phone: result.user.phone,
-                usertype: result.user.usertype,
+                role: result.user.role,
                 accessToken: result.accessToken,
                 // refreshToken: result.refreshToken
             }
@@ -104,7 +104,7 @@ export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
                 id: result.user.id,
                 email: result.user.email,
                 name: result.user.name,
-                usertype: result.user.usertype,
+                role: result.user.role,
                 accessToken: result.accessToken,
             }
         });
