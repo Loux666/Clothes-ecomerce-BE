@@ -18,6 +18,8 @@ import { createAttributeSchema, updateAttributeSchema, createAttributeValueSchem
 import { getAllAttributesController, createAttributeController, updateAttributeController, deleteAttributeController, createAttributeValueController, updateAttributeValueController, deleteAttributeValueController } from '../controllers/AttributeController';
 import { createProductSchema, updateProductSchema, updateStockSchema } from '../validations/product.validation';
 import { getAllProductsController, createProductController, getProductBySlugController, updateProductController, updateVariantStockController } from '../controllers/ProductController';
+import { getCartItemsController, addToCartController, updateCartItemController, removeCartItemController } from '../controllers/CartController';
+import { addToCartValidation, updateCartValidation } from '../validations/cart.validation';
 
 const router = Router();
 
@@ -58,5 +60,11 @@ router.put('/products/:id', verifyToken, validateRequest(updateProductSchema), u
 
 // Variant Stock
 router.patch('/variants/:variantId/stock', verifyToken, validateRequest(updateStockSchema), updateVariantStockController); // Private: Admin điều chỉnh kho
+
+// Cart
+router.get('/cart', verifyToken, getCartItemsController); // Lấy giỏ hàng
+router.post('/cart', verifyToken, validateRequest(addToCartValidation), addToCartController); // Thêm vào giỏ
+router.put('/cart/:variantId', verifyToken, validateRequest(updateCartValidation), updateCartItemController); // Cập nhật số lượng
+router.delete('/cart/:variantId', verifyToken, removeCartItemController); // Xóa khỏi giỏ
 
 export default router;
