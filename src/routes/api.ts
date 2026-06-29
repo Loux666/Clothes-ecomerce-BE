@@ -20,6 +20,9 @@ import { createProductSchema, updateProductSchema, updateStockSchema } from '../
 import { getAllProductsController, createProductController, getProductBySlugController, updateProductController, updateVariantStockController } from '../controllers/ProductController';
 import { getCartItemsController, addToCartController, updateCartItemController, removeCartItemController } from '../controllers/CartController';
 import { addToCartValidation, updateCartValidation } from '../validations/cart.validation';
+import { createCoupon, getCoupons, updateCoupon, deleteCoupon, validateCouponClient } from '../controllers/CouponController';
+import { createCouponSchema, updateCouponSchema, validateCouponSchema } from '../validations/coupon.validation';
+
 
 const router = Router();
 
@@ -66,5 +69,14 @@ router.get('/cart', verifyToken, getCartItemsController); // Lấy giỏ hàng
 router.post('/cart', verifyToken, validateRequest(addToCartValidation), addToCartController); // Thêm vào giỏ
 router.put('/cart/:variantId', verifyToken, validateRequest(updateCartValidation), updateCartItemController); // Cập nhật số lượng
 router.delete('/cart/:variantId', verifyToken, removeCartItemController); // Xóa khỏi giỏ
+
+// Coupon
+router.get('/admin/coupons', verifyToken, getCoupons);
+router.post('/admin/coupons', verifyToken, validateRequest(createCouponSchema), createCoupon);
+router.put('/admin/coupons/:id', verifyToken, validateRequest(updateCouponSchema), updateCoupon);
+router.delete('/admin/coupons/:id', verifyToken, deleteCoupon);
+
+// Frontend Coupon Validation (không bắt buộc login để test mã)
+router.post('/coupons/validate', validateRequest(validateCouponSchema), validateCouponClient);
 
 export default router;
