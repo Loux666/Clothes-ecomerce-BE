@@ -42,7 +42,7 @@ export const getProductReviews = async (productId: string, page: number, limit: 
             where: { productId, status: 'APPROVED' },
             skip,
             take: limit,
-            include: { user: { select: { fullName: true, avatarUrl: true } } },
+            include: { user: { select: { name: true, avatarUrl: true } } },
             orderBy: { createdAt: 'desc' }
         }),
         prisma.review.count({ where: { productId, status: 'APPROVED' } })
@@ -66,7 +66,7 @@ export const getAllReviewsAdmin = async (page: number, limit: number, status?: s
             where: whereCondition,
             skip,
             take: limit,
-            include: { user: { select: { fullName: true } }, product: { select: { name: true } } },
+            include: { user: { select: { name: true } }, product: { select: { name: true } } },
             orderBy: { createdAt: 'desc' }
         }),
         prisma.review.count({ where: whereCondition })
