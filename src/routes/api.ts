@@ -119,4 +119,45 @@ import { manualRestockSchema } from '../validations/inventory.validation';
 router.get('/admin/inventory/logs', verifyToken, getInventoryLogs);
 router.post('/admin/inventory/restock', verifyToken, validateRequest(manualRestockSchema), manualRestock);
 
+// ==========================================
+// Address Book (Sổ địa chỉ)
+// ==========================================
+import { getMyAddresses, createAddress, updateAddress, deleteAddress } from '../controllers/AddressController';
+import { addressSchema } from '../validations/address.validation';
+
+router.get('/profile/addresses', verifyToken, getMyAddresses);
+router.post('/profile/addresses', verifyToken, validateRequest(addressSchema), createAddress);
+router.put('/profile/addresses/:id', verifyToken, validateRequest(addressSchema), updateAddress);
+router.delete('/profile/addresses/:id', verifyToken, deleteAddress);
+
+// ==========================================
+// Wishlist (Yêu thích)
+// ==========================================
+import { getMyWishlist, toggleWishlist } from '../controllers/WishlistController';
+import { toggleWishlistSchema } from '../validations/wishlist.validation';
+
+router.get('/wishlist', verifyToken, getMyWishlist);
+router.post('/wishlist', verifyToken, validateRequest(toggleWishlistSchema), toggleWishlist);
+
+// ==========================================
+// Reviews (Đánh giá)
+// ==========================================
+import { createReview, getProductReviews, getAllReviewsAdmin, updateReviewStatus } from '../controllers/ReviewController';
+import { createReviewSchema, updateReviewStatusSchema } from '../validations/review.validation';
+
+router.post('/reviews', verifyToken, validateRequest(createReviewSchema), createReview);
+router.get('/products/:id/reviews', getProductReviews);
+router.get('/admin/reviews', verifyToken, getAllReviewsAdmin);
+router.put('/admin/reviews/:id/status', verifyToken, validateRequest(updateReviewStatusSchema), updateReviewStatus);
+
+// ==========================================
+// CMS / Settings (Cấu hình trang chủ)
+// ==========================================
+import { getHomepageSettings, getSettingAdmin, updateSettingAdmin } from '../controllers/SettingController';
+import { updateSettingSchema } from '../validations/setting.validation';
+
+router.get('/settings/homepage', getHomepageSettings);
+router.get('/admin/settings/:key', verifyToken, getSettingAdmin);
+router.put('/admin/settings/:key', verifyToken, validateRequest(updateSettingSchema), updateSettingAdmin);
+
 export default router;
