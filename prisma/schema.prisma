@@ -309,6 +309,7 @@ enum PaymentMethod {
   COD
   VNPAY
   MOMO
+  BANK_TRANSFER
 }
 
 enum PaymentStatus {

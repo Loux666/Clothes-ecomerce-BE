@@ -79,4 +79,44 @@ router.delete('/admin/coupons/:id', verifyToken, deleteCoupon);
 // Frontend Coupon Validation (không bắt buộc login để test mã)
 router.post('/coupons/validate', validateRequest(validateCouponSchema), validateCouponClient);
 
+// ==========================================
+// Order (Đặt hàng & Quản lý đơn)
+// ==========================================
+import { checkout, checkPaymentStatus, getMyOrders, getMyOrderDetails, getAllOrdersAdmin, getOrderDetailsAdmin, updateOrderStatus, cancelOrder } from '../controllers/OrderController';
+import { checkoutSchema, updateOrderStatusSchema, cancelOrderSchema } from '../validations/order.validation';
+
+// Public/Auth - Đặt hàng (Có thể không cần login, hoặc cần login tùy requirement, hiện tại check user id nếu có)
+// Ghi chú: Có thể thêm middleware tự chọn `optionalAuth` nếu muốn guest vẫn checkout được, hoặc dùng verifyToken
+router.post('/orders/checkout', verifyToken, validateRequest(checkoutSchema), checkout);
+router.get('/orders/:orderCode/payment-status', checkPaymentStatus); // Phục vụ Frontend polling trạng thái thanh toán
+
+// User - Lịch sử đơn hàng
+router.get('/orders/me', verifyToken, getMyOrders);
+router.get('/orders/me/:id', verifyToken, getMyOrderDetails);
+router.put('/orders/:id/cancel', verifyToken, validateRequest(cancelOrderSchema), cancelOrder);
+
+// Admin - Quản lý đơn
+router.get('/admin/orders', verifyToken, getAllOrdersAdmin); // Nên thêm `authorizeRoles('ADMIN')`
+router.get('/admin/orders/:id', verifyToken, getOrderDetailsAdmin);
+router.put('/admin/orders/:id/status', verifyToken, validateRequest(updateOrderStatusSchema), updateOrderStatus);
+router.put('/admin/orders/:id/cancel', verifyToken, validateRequest(cancelOrderSchema), cancelOrder);
+
+// ==========================================
+// Webhooks
+// ==========================================
+import { sepayWebhook } from '../controllers/WebhookController';
+
+// SePay gọi vào endpoint này khi có giao dịch ngân hàng mới
+router.post('/webhooks/sepay', sepayWebhook);
+
+// ==========================================
+// Inventory (Quản lý kho)
+// ==========================================
+import { getInventoryLogs, manualRestock } from '../controllers/InventoryController';
+import { manualRestockSchema } from '../validations/inventory.validation';
+
+// Admin - Quản lý nhập xuất kho
+router.get('/admin/inventory/logs', verifyToken, getInventoryLogs);
+router.post('/admin/inventory/restock', verifyToken, validateRequest(manualRestockSchema), manualRestock);
+
 export default router;

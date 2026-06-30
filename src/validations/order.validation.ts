@@ -9,6 +9,7 @@ export const checkoutSchema = z.object({
         shippingProvince: z.string({ message: "Tỉnh/Thành phố là bắt buộc" }),
         paymentMethod: z.enum(['COD', 'VNPAY', 'MOMO'], { message: "Phương thức thanh toán không hợp lệ" }),
         note: z.string().optional(),
+        couponId: z.string().optional(),
         items: z.array(
             z.object({
                 variantId: z.string({ message: "variantId là bắt buộc" }),
