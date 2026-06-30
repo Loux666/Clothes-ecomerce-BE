@@ -22,7 +22,7 @@ export const createAddress = async (req: AuthRequest, res: Response) => {
 
 export const updateAddress = async (req: AuthRequest, res: Response) => {
     try {
-        const address = await addressService.updateAddress(req.params.id, req.user!.id, req.body);
+        const address = await addressService.updateAddress(req.params.id as string, req.user!.id, req.body);
         res.status(200).json({ message: "Cập nhật địa chỉ thành công", data: address });
     } catch (error: any) {
         res.status(400).json({ message: error.message });
@@ -31,7 +31,7 @@ export const updateAddress = async (req: AuthRequest, res: Response) => {
 
 export const deleteAddress = async (req: AuthRequest, res: Response) => {
     try {
-        await addressService.deleteAddress(req.params.id, req.user!.id);
+        await addressService.deleteAddress(req.params.id as string, req.user!.id);
         res.status(200).json({ message: "Xóa địa chỉ thành công" });
     } catch (error: any) {
         res.status(400).json({ message: error.message });
