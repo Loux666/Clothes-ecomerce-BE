@@ -15,13 +15,13 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         res.cookie("accessToken", result.accessToken, {
             httpOnly: true,
             secure: false, // dev = false, production = true
-            sameSite: 'strict',
+            sameSite: 'lax',
             maxAge: 30 * 60 * 1000 // han 30 phut
         });
         res.cookie("refreshToken", result.refreshToken, {
             httpOnly: true,
             secure: false, // dev = false, production = true
-            sameSite: 'strict',
+            sameSite: 'lax',
             maxAge: 7 * 24 * 60 * 60 * 1000 // han 7 ngay
         });
         res.json({
@@ -88,13 +88,13 @@ export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
         res.cookie("accessToken", result.accessToken, {
             httpOnly: true,
             secure: false,
-            sameSite: 'strict',
+            sameSite: 'lax',
             maxAge: 30 * 60 * 1000
         });
         res.cookie("refreshToken", result.refreshToken, {
             httpOnly: true,
             secure: false,
-            sameSite: 'strict',
+            sameSite: 'lax',
             maxAge: 7 * 24 * 60 * 60 * 1000
         });
 

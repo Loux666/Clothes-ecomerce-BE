@@ -8,12 +8,12 @@ export interface AuthRequest extends Request {
 
 export const verifyToken = (req: AuthRequest, res: Response, next: NextFunction): void => {
     try {
-        // 1. Lấy token từ header 'Authorization'
-        // const authHeader = req.headers['authorization'];
+        // 1. Lấy token từ Cookie hoặc Header 'Authorization'
+        const authHeader = req.headers['authorization'];
+        const headerToken = authHeader && authHeader.split(' ')[1];
+        const cookieToken = req.cookies?.accessToken;
 
-        // Header thường có dạng: "Bearer eyJhbGciOiJIUzI1..." nên ta cắt lấy phần sau chữ Bearer
-        // const token = authHeader && authHeader.split(' ')[1];
-        const token = req.cookies.accessToken;
+        const token = cookieToken || headerToken;
         if (!token) {
             res.status(401).json({ message: 'Không tìm thấy Token. Vui lòng đăng nhập!' });
             return;
