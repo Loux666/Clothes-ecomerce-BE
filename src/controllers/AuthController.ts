@@ -38,7 +38,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         });
     } catch (error: any) {
         // Bắt lỗi từ Service
-        res.status(401).json({ message: error.message });
+        res.status(error.status || 401).json({ message: error.message });
     }
 };
 
