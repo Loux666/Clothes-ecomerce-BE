@@ -17,7 +17,7 @@ export const sendOtpEmail = async (toEmail: string, otpCode: string) => {
             to: toEmail,
             subject: 'Mã xác thực OTP của bạn',
             html: `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="font-family: 'Inter', sans-serif; max-width: 600px; margin: 0 auto;">
                     <h2 style="color: #333;">Xác nhận địa chỉ email</h2>
                     <p>Chào bạn,</p>
                     <p>Mã OTP để xác thực tài khoản của bạn là:</p>
