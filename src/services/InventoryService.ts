@@ -1,4 +1,5 @@
 import prisma from '../config/prisma';
+import { ApiError } from '../utils/ApiError';
 
 export const getInventoryLogs = async (page: number, limit: number, variantId?: string) => {
     const skip = (page - 1) * limit;
@@ -38,7 +39,7 @@ export const getInventoryLogs = async (page: number, limit: number, variantId?: 
 export const manualRestock = async (variantId: string, quantity: number, note: string) => {
     return await prisma.$transaction(async (tx) => {
         const variant = await tx.productVariant.findUnique({ where: { id: variantId } });
-        if (!variant) throw new Error("Variant không tồn tại");
+        if (!variant) throw new ApiError(404, "Variant không tồn tại");
 
         const updated = await tx.productVariant.update({
             where: { id: variantId },

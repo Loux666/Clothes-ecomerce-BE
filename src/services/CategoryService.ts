@@ -1,4 +1,5 @@
 import prisma from "../config/prisma";
+import { ApiError } from "../utils/ApiError";
 
 
 export const getAllCategories = async () => {
@@ -66,7 +67,7 @@ export const updateCategory = async (categoryId: string, data: {
         }
     })
     if (!existingCategory) {
-        throw new Error("Danh mục không tồn tại")
+        throw new ApiError(404, "Danh mục không tồn tại")
     }
 
     const slug = data.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, '-').trim();
@@ -93,7 +94,7 @@ export const deleteCategory = async (categoryId: string) => {
         }
     })
     if (!existingCategory) {
-        throw new Error("Danh mục không tồn tại")
+        throw new ApiError(404, "Danh mục không tồn tại")
     }
     return await prisma.category.delete({
         where: {

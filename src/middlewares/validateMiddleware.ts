@@ -5,7 +5,8 @@ export const validateRequest = (schema: ZodSchema) => {
     return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             // Kiểm tra body theo schema được truyền vào
-            await schema.parseAsync(req.body);
+            // Wrap req trong object để match với schema structure
+            await schema.parseAsync({ body: req.body, params: req.params, query: req.query });
             next(); // Dữ liệu hợp lệ, cho phép đi tiếp vào Controller
         } catch (error) {
             if (error instanceof ZodError) {

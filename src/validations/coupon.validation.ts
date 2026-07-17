@@ -10,11 +10,11 @@ export const createCouponSchema = z.object({
         }),
         value: z.number({ message: "Giá trị giảm là bắt buộc" })
             .positive("Giá trị giảm phải lớn hơn 0"),
-        minOrderValue: z.number().min(0).optional().default(0),
-        maxDiscount: z.number().positive().optional(),
-        usageLimit: z.number().int().positive().optional(),
-        startDate: z.string().datetime({ message: "Ngày bắt đầu không hợp lệ" }).optional(),
-        endDate: z.string().datetime({ message: "Ngày kết thúc không hợp lệ" }).optional(),
+        minOrderValue: z.number().min(0).nullable().optional().default(null),
+        maxDiscount: z.number().positive().nullable().optional().default(null),
+        usageLimit: z.number().int().positive().nullable().optional().default(null),
+        startDate: z.union([z.string().datetime({ message: "Ngày bắt đầu không hợp lệ" }), z.null()]).optional(),
+        endDate: z.union([z.string().datetime({ message: "Ngày kết thúc không hợp lệ" }), z.null()]).optional(),
         isActive: z.boolean().optional().default(true)
     }).refine((data) => {
         if (data.type === 'PERCENTAGE' && data.value > 100) {
@@ -40,11 +40,11 @@ export const updateCouponSchema = z.object({
         code: z.string().min(3).toUpperCase().optional(),
         type: z.enum(['PERCENTAGE', 'FIXED_AMOUNT', 'FREE_SHIPPING']).optional(),
         value: z.number().positive().optional(),
-        minOrderValue: z.number().min(0).optional(),
-        maxDiscount: z.number().positive().optional(),
-        usageLimit: z.number().int().positive().optional(),
-        startDate: z.string().datetime().optional(),
-        endDate: z.string().datetime().optional(),
+        minOrderValue: z.number().min(0).nullable().optional(),
+        maxDiscount: z.number().positive().nullable().optional(),
+        usageLimit: z.number().int().positive().nullable().optional(),
+        startDate: z.union([z.string().datetime(), z.null()]).optional(),
+        endDate: z.union([z.string().datetime(), z.null()]).optional(),
         isActive: z.boolean().optional()
     }).refine((data) => {
         if (data.type === 'PERCENTAGE' && data.value && data.value > 100) {

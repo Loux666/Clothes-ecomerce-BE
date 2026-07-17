@@ -1,5 +1,6 @@
 import prisma from '../config/prisma';
 import { Prisma } from '@prisma/client';
+import { ApiError } from '../utils/ApiError';
 
 export const createCoupon = async (data: Prisma.CouponCreateInput) => {
     // Kiểm tra mã đã tồn tại chưa
@@ -7,7 +8,7 @@ export const createCoupon = async (data: Prisma.CouponCreateInput) => {
         where: { code: data.code }
     });
     if (existing) {
-        throw new Error("Mã giảm giá này đã tồn tại!");
+        throw new ApiError(409, "Mã giảm giá này đã tồn tại!");
     }
 
     return await prisma.coupon.create({ data });
@@ -45,7 +46,7 @@ export const updateCoupon = async (id: string, data: Prisma.CouponUpdateInput) =
             }
         });
         if (existing) {
-            throw new Error("Mã giảm giá này đã tồn tại!");
+            throw new ApiError(409, "Mã giảm giá này đã tồn tại!");
         }
     }
 
@@ -68,28 +69,28 @@ export const validateCoupon = async (code: string, orderValue: number) => {
     });
 
     if (!coupon) {
-        throw new Error("Mã giảm giá không tồn tại!");
+        throw new ApiError(404, "Mã giảm giá không tồn tại!");
     }
 
     if (!coupon.isActive) {
-        throw new Error("Mã giảm giá đã bị khóa hoặc ngừng áp dụng!");
+        throw new ApiError(400, "Mã giảm giá đã bị khóa hoặc ngừng áp dụng!");
     }
 
     const now = new Date();
     if (coupon.startDate && now < coupon.startDate) {
-        throw new Error("Mã giảm giá chưa đến ngày bắt đầu sử dụng!");
+        throw new ApiError(400, "Mã giảm giá chưa đến ngày bắt đầu sử dụng!");
     }
 
     if (coupon.endDate && now > coupon.endDate) {
-        throw new Error("Mã giảm giá đã hết hạn sử dụng!");
+        throw new ApiError(400, "Mã giảm giá đã hết hạn sử dụng!");
     }
 
     if (coupon.usageLimit !== null && coupon.usedCount >= coupon.usageLimit) {
-        throw new Error("Mã giảm giá đã hết lượt sử dụng!");
+        throw new ApiError(400, "Mã giảm giá đã hết lượt sử dụng!");
     }
 
     if (coupon.minOrderValue && new Prisma.Decimal(orderValue).lessThan(coupon.minOrderValue)) {
-        throw new Error(`Đơn hàng tối thiểu để áp dụng mã này là ${coupon.minOrderValue}đ!`);
+        throw new ApiError(400, `Đơn hàng tối thiểu để áp dụng mã này là ${coupon.minOrderValue}đ!`);
     }
 
     // Tính toán số tiền được giảm

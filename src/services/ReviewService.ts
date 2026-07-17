@@ -1,4 +1,5 @@
 import prisma from '../config/prisma';
+import { ApiError } from '../utils/ApiError';
 
 export const createReview = async (userId: string, data: any) => {
     // Kiểm tra xem user có mua sản phẩm này chưa (Status DELIVERED)
@@ -12,14 +13,14 @@ export const createReview = async (userId: string, data: any) => {
         }
     });
 
-    if (!orderItem) throw new Error("Chỉ có thể đánh giá sản phẩm đã giao thành công");
+    if (!orderItem) throw new ApiError(400, "Chỉ có thể đánh giá sản phẩm đã giao thành công");
 
     // Kiểm tra xem đã review chưa
     const existing = await prisma.review.findFirst({
         where: { orderItemId: data.orderItemId }
     });
 
-    if (existing) throw new Error("Bạn đã đánh giá sản phẩm này rồi");
+    if (existing) throw new ApiError(409, "Bạn đã đánh giá sản phẩm này rồi");
 
     return await prisma.review.create({
         data: {

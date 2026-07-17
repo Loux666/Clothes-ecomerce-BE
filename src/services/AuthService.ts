@@ -2,6 +2,7 @@ import prisma from '../config/prisma';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { sendOtpEmail } from '../utils/mailer';
+import { ApiError } from '../utils/ApiError';
 
 interface updateUserDto {
     name: string;
@@ -18,7 +19,7 @@ export const loginUser = async (email: string, password: string) => {
     });
 
     if (!user) {
-        throw new Error('Email không tồn tại trong hệ thống');
+        throw new ApiError(404, 'Email không tồn tại trong hệ thống');
     }
 
     if (!user.email_verified_at) {
@@ -34,19 +35,17 @@ export const loginUser = async (email: string, password: string) => {
         // Gửi email thật qua Nodemailer
         await sendOtpEmail(email, otp);
 
-        const err: any = new Error('Vui lòng xác thực OTP');
-        err.status = 403;
-        throw err;
+        throw new ApiError(403, 'Vui lòng xác thực OTP');
     }
 
     // 2. Kiểm tra mật khẩu
     if (!user.password) {
-        throw new Error('Tài khoản chưa được thiết lập mật khẩu (có thể đăng nhập qua Google/Facebook)');
+        throw new ApiError(400, 'Tài khoản chưa được thiết lập mật khẩu (có thể đăng nhập qua Google/Facebook)');
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-        throw new Error('Sai mật khẩu');
+        throw new ApiError(401, 'Sai mật khẩu');
     }
 
     // 3. Tạo Token (thời hạn 30 phút)
@@ -75,7 +74,7 @@ export const registerUser = async (data: any) => {
         where: { email: email }
     });
     if (existingUser) {
-        throw new Error('Email đã tồn tại trong hệ thống');
+        throw new ApiError(409, 'Email đã tồn tại trong hệ thống');
     }
 
     //Ma hoa password bcrypt
@@ -110,15 +109,15 @@ export const verifyOtpService = async (email: string, otp: string) => {
     const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user) {
-        throw new Error('Email không tồn tại');
+        throw new ApiError(404, 'Email không tồn tại');
     }
 
     if (user.otp_code !== otp) {
-        throw new Error('Mã OTP không chính xác');
+        throw new ApiError(400, 'Mã OTP không chính xác');
     }
 
     if (user.otp_expires_at && user.otp_expires_at < new Date()) {
-        throw new Error('Mã OTP đã hết hạn');
+        throw new ApiError(400, 'Mã OTP đã hết hạn');
     }
 
     // OTP đúng, cập nhật trạng thái verified và xóa OTP
@@ -154,7 +153,7 @@ export const getProfile = async (userId: string) => {
     });
 
     if (!user) {
-        throw new Error('Không tìm thấy thông tin người dùng');
+        throw new ApiError(404, 'Không tìm thấy thông tin người dùng');
     }
 
     // Trả về thông tin user (nhưng giấu password đi)
@@ -168,7 +167,7 @@ export const updateProfile = async (userId: string, data: updateUserDto) => {
         where: { id: userId }
     });
     if (!existingUser) {
-        throw new Error('Không tìm thấy thông tin người dùng');
+        throw new ApiError(404, 'Không tìm thấy thông tin người dùng');
     }
 
     if (data.password) {
@@ -183,7 +182,7 @@ export const updateProfile = async (userId: string, data: updateUserDto) => {
         });
 
         if (userWithSameEmail) {
-            throw new Error('Email này đã tồn tại trong hệ thống');
+            throw new ApiError(409, 'Email này đã tồn tại trong hệ thống');
         }
     }
 
@@ -204,3 +203,39 @@ export const updateProfile = async (userId: string, data: updateUserDto) => {
 
 
 }
+
+export const refreshAccessToken = async (refreshToken: string) => {
+    try {
+        // Verify refresh token
+        const decoded = jwt.verify(
+            refreshToken,
+            process.env.REFRESH_SECRET || 'refresh token'
+        ) as { id: string; role: string };
+
+        // Kiểm tra user còn tồn tại không
+        const user = await prisma.user.findUnique({
+            where: { id: decoded.id }
+        });
+
+        if (!user) {
+            throw new ApiError(401, 'Người dùng không tồn tại');
+        }
+
+        // Tạo access token mới
+        const newAccessToken = jwt.sign(
+            { id: user.id, role: user.role },
+            process.env.ACCESS_SECRET || 'access token',
+            { expiresIn: '30m' }
+        );
+
+        return { accessToken: newAccessToken };
+    } catch (error) {
+        if (error instanceof jwt.JsonWebTokenError) {
+            throw new ApiError(401, 'Refresh token không hợp lệ');
+        }
+        if (error instanceof jwt.TokenExpiredError) {
+            throw new ApiError(401, 'Refresh token đã hết hạn, vui lòng đăng nhập lại');
+        }
+        throw error;
+    }
+};

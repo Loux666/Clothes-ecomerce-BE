@@ -7,6 +7,7 @@ import cookieParser from 'cookie-parser';
 
 // Import cấu hình database để test kết nối khi chạy server
 import './config/database';
+import { errorHandler, notFoundHandler } from './middlewares/errorHandler';
 
 const app = express();
 
@@ -29,6 +30,10 @@ app.use(cookieParser());
 import apiRoute from './routes/api';
 app.use('/', webRoute);
 app.use('/api', apiRoute); // Mọi API đều có tiền tố /api, ví dụ: /api/login
+
+app.use(notFoundHandler);
+app.use(errorHandler);
+
 // Bật server lên và nghe ở cổng 3000
 app.listen(PORT, () => {
     console.log(`Server đang chạy tại: http://localhost:${PORT}`);

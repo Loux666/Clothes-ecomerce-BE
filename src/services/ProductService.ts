@@ -44,6 +44,7 @@ export const createProduct = async (data: CreateProductType) => {
                     productId: newProduct.id,
                     sku: variant.sku,
                     priceOverride: variant.priceOverride,
+                    salePriceOverride: variant.salePriceOverride,
                     stockQty: variant.stockQty,
                     weightGram: variant.weightGram,
                     isActive: variant.isActive
@@ -56,6 +57,19 @@ export const createProduct = async (data: CreateProductType) => {
                     data: variant.attributeValueIds.map(attrValId => ({
                         variantId: newVariant.id,
                         attributeValueId: attrValId
+                    }))
+                });
+            }
+
+            // 2.5 Insert Bảng 5: Variant Images (Ảnh riêng cho từng variant)
+            if (variant.images && variant.images.length > 0) {
+                await tx.variantImage.createMany({
+                    data: variant.images.map(img => ({
+                        variantId: newVariant.id,
+                        url: img.url,
+                        altText: img.altText,
+                        sortOrder: img.sortOrder,
+                        isPrimary: img.isPrimary
                     }))
                 });
             }
@@ -76,6 +90,7 @@ export const getAllProducts = async () => {
             category: true, // Lấy luôn tên danh mục
             variants: {
                 include: {
+                    images: true, // Lấy ảnh riêng của variant
                     attributes: {
                         include: {
                             attributeValue: {
@@ -99,6 +114,7 @@ export const getProductBySlug = async (slug: string) => {
             category: true,
             variants: {
                 include: {
+                    images: true, // Lấy ảnh riêng của variant
                     attributes: {
                         include: {
                             attributeValue: {

@@ -1,5 +1,6 @@
 import prisma from '../config/prisma';
 import { Prisma } from '@prisma/client';
+import { ApiError } from '../utils/ApiError';
 
 // Tạo mã đơn hàng dạng ORD-YYYYMMDD-XXXX
 const generateOrderCode = () => {
@@ -14,7 +15,7 @@ export const checkout = async (userId: string | null | undefined, data: any) => 
         // 1. Sắp xếp mảng ID để tránh deadlock
         const variantIds = data.items.map((item: any) => item.variantId).sort();
 
-        if (variantIds.length === 0) throw new Error("Giỏ hàng đang trống!");
+        if (variantIds.length === 0) throw new ApiError(400, "Giỏ hàng đang trống!");
 
         // 2. Lock Row các variant (chống Oversell khi nhiều luồng mua cùng 1 lúc)
         const inClause = variantIds.map((id: string) => `'${id}'`).join(',');
@@ -43,10 +44,10 @@ export const checkout = async (userId: string | null | undefined, data: any) => 
         // 4. Kiểm tra số lượng tồn kho từng mặt hàng & Tính subtotal
         for (const item of data.items) {
             const variant = variants.find(v => v.id === item.variantId);
-            if (!variant) throw new Error("Sản phẩm không tồn tại!");
+            if (!variant) throw new ApiError(404, "Sản phẩm không tồn tại!");
             
             if (variant.stockQty < item.quantity) {
-                throw new Error(`Sản phẩm ${variant.product.name} (Phân loại: ${variant.sku}) chỉ còn ${variant.stockQty} trong kho!`);
+                throw new ApiError(400, `Sản phẩm ${variant.product.name} (Phân loại: ${variant.sku}) chỉ còn ${variant.stockQty} trong kho!`);
             }
 
             const price = variant.priceOverride || variant.product.basePrice;
@@ -78,14 +79,14 @@ export const checkout = async (userId: string | null | undefined, data: any) => 
         if (data.couponId) {
             const coupon = await tx.coupon.findUnique({ where: { id: data.couponId } });
 
-            if (!coupon) throw new Error("Mã giảm giá không tồn tại!");
-            if (!coupon.isActive) throw new Error("Mã giảm giá đã bị khóa!");
+            if (!coupon) throw new ApiError(404, "Mã giảm giá không tồn tại!");
+            if (!coupon.isActive) throw new ApiError(400, "Mã giảm giá đã bị khóa!");
             
             const now = new Date();
-            if (coupon.startDate && now < coupon.startDate) throw new Error("Mã giảm giá chưa đến ngày bắt đầu sử dụng!");
-            if (coupon.endDate && now > coupon.endDate) throw new Error("Mã giảm giá đã hết hạn!");
-            if (coupon.usageLimit !== null && coupon.usedCount >= coupon.usageLimit) throw new Error("Mã giảm giá đã hết lượt sử dụng!");
-            if (coupon.minOrderValue && subtotal.lessThan(coupon.minOrderValue)) throw new Error(`Đơn tối thiểu để áp dụng mã này là ${coupon.minOrderValue}đ!`);
+            if (coupon.startDate && now < coupon.startDate) throw new ApiError(400, "Mã giảm giá chưa đến ngày bắt đầu sử dụng!");
+            if (coupon.endDate && now > coupon.endDate) throw new ApiError(400, "Mã giảm giá đã hết hạn!");
+            if (coupon.usageLimit !== null && coupon.usedCount >= coupon.usageLimit) throw new ApiError(400, "Mã giảm giá đã hết lượt sử dụng!");
+            if (coupon.minOrderValue && subtotal.lessThan(coupon.minOrderValue)) throw new ApiError(400, `Đơn tối thiểu để áp dụng mã này là ${coupon.minOrderValue}đ!`);
 
             // Tính tiền giảm
             if (coupon.type === 'PERCENTAGE') {
@@ -191,7 +192,7 @@ export const checkPaymentStatus = async (orderCode: string) => {
         where: { orderCode },
         select: { paymentStatus: true, status: true }
     });
-    if (!order) throw new Error("Đơn hàng không tồn tại");
+    if (!order) throw new ApiError(404, "Đơn hàng không tồn tại");
     return order;
 };
 
@@ -208,7 +209,7 @@ export const getMyOrderDetails = async (userId: string, orderId: string) => {
         where: { id: orderId, userId },
         include: { items: true }
     });
-    if (!order) throw new Error("Đơn hàng không tồn tại hoặc không thuộc về bạn");
+    if (!order) throw new ApiError(404, "Đơn hàng không tồn tại hoặc không thuộc về bạn");
     return order;
 };
 
@@ -234,13 +235,13 @@ export const getOrderDetailsAdmin = async (orderId: string) => {
         where: { id: orderId },
         include: { items: true }
     });
-    if (!order) throw new Error("Đơn hàng không tồn tại");
+    if (!order) throw new ApiError(404, "Đơn hàng không tồn tại");
     return order;
 };
 
 export const updateOrderStatus = async (orderId: string, status: string, note?: string) => {
     const order = await prisma.order.findUnique({ where: { id: orderId } });
-    if (!order) throw new Error("Đơn hàng không tồn tại");
+    if (!order) throw new ApiError(404, "Đơn hàng không tồn tại");
 
     return await prisma.order.update({
         where: { id: orderId },
@@ -258,19 +259,19 @@ export const cancelOrder = async (orderId: string, reason: string, userId?: stri
             include: { items: true }
         });
 
-        if (!order) throw new Error("Đơn hàng không tồn tại");
+        if (!order) throw new ApiError(404, "Đơn hàng không tồn tại");
         
         // Chặn hoàn toàn các case vô lý chung cho cả Admin và User
-        if (order.status === 'CANCELLED') throw new Error("Đơn hàng này đã bị hủy trước đó rồi");
-        if (order.status === 'DELIVERED') throw new Error("Không thể hủy đơn hàng đã giao thành công");
+        if (order.status === 'CANCELLED') throw new ApiError(409, "Đơn hàng này đã bị hủy trước đó rồi");
+        if (order.status === 'DELIVERED') throw new ApiError(400, "Không thể hủy đơn hàng đã giao thành công");
 
         if (userId) {
             // Logic dành cho Khách hàng (User) tự hủy
             if (order.userId !== userId) {
-                throw new Error("Bạn không có quyền hủy đơn hàng này");
+                throw new ApiError(403, "Bạn không có quyền hủy đơn hàng này");
             }
             if (order.status !== 'PENDING') {
-                throw new Error("Khách hàng chỉ có thể tự hủy khi đơn hàng đang ở trạng thái chờ xác nhận (PENDING). Vui lòng liên hệ CSKH.");
+                throw new ApiError(400, "Khách hàng chỉ có thể tự hủy khi đơn hàng đang ở trạng thái chờ xác nhận (PENDING). Vui lòng liên hệ CSKH.");
             }
         } else {
             // Logic dành cho Admin hủy

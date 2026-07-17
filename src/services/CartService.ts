@@ -1,4 +1,5 @@
 import prisma from '../config/prisma';
+import { ApiError } from '../utils/ApiError';
 
 
 export const getCartItems = async (userId: string) => {
@@ -59,13 +60,13 @@ export const addToCart = async (userId: string, data: { variantId: string; quant
     });
 
     if (!variant) {
-        throw new Error("Phân loại sản phẩm không tồn tại!");
+        throw new ApiError(404, "Phân loại sản phẩm không tồn tại!");
     }
     
     // Tùy nghiệp vụ: Bạn có thể bỏ đoạn check tồn kho này nếu muốn cho khách cứ thêm vào giỏ thoải mái, lúc thanh toán mới check. 
     // Nhưng check luôn ở đây sẽ tốt cho UX hơn.
     if (variant.stockQty < data.quantity) {
-        throw new Error(`Kho chỉ còn ${variant.stockQty} sản phẩm!`);
+        throw new ApiError(400, `Kho chỉ còn ${variant.stockQty} sản phẩm!`);
     }
 
     // 3. Upsert CartItem (Đã có thì cộng dồn, chưa có thì tạo mới)
@@ -94,7 +95,7 @@ export const addToCart = async (userId: string, data: { variantId: string; quant
 
 export const updateCartItem = async (userId: string, variantId: string, quantity: number) => {
     const cart = await prisma.cart.findUnique({ where: { userId } });
-    if (!cart) throw new Error("Giỏ hàng không tồn tại!");
+    if (!cart) throw new ApiError(404, "Giỏ hàng không tồn tại!");
 
     try {
         // Dùng cho nút [+] [-] hoặc ô input sửa số lượng trên Frontend
@@ -105,13 +106,13 @@ export const updateCartItem = async (userId: string, variantId: string, quantity
             data: { quantity: quantity } // GHI ĐÈ bằng số lượng mới
         });
     } catch (error) {
-        throw new Error("Sản phẩm này không nằm trong giỏ hàng của bạn!");
+        throw new ApiError(404, "Sản phẩm này không nằm trong giỏ hàng của bạn!");
     }
 };
 
 export const removeCartItem = async (userId: string, variantId: string) => {
     const cart = await prisma.cart.findUnique({ where: { userId } });
-    if (!cart) throw new Error("Giỏ hàng không tồn tại!");
+    if (!cart) throw new ApiError(404, "Giỏ hàng không tồn tại!");
 
     try {
         return await prisma.cartItem.delete({
@@ -120,7 +121,7 @@ export const removeCartItem = async (userId: string, variantId: string) => {
             }
         });
     } catch (error) {
-        throw new Error("Sản phẩm này không tồn tại trong giỏ hàng!");
+        throw new ApiError(404, "Sản phẩm này không tồn tại trong giỏ hàng!");
     }
 };
 

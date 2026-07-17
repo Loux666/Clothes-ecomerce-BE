@@ -1,4 +1,5 @@
 import prisma from '../config/prisma';
+import { ApiError } from '../utils/ApiError';
 
 export const getMyAddresses = async (userId: string) => {
     return await prisma.address.findMany({
@@ -24,7 +25,7 @@ export const createAddress = async (userId: string, data: any) => {
 export const updateAddress = async (id: string, userId: string, data: any) => {
     return await prisma.$transaction(async (tx) => {
         const addr = await tx.address.findFirst({ where: { id, userId } });
-        if (!addr) throw new Error("Địa chỉ không tồn tại");
+        if (!addr) throw new ApiError(404, "Địa chỉ không tồn tại");
 
         if (data.isDefault) {
             await tx.address.updateMany({
@@ -42,7 +43,7 @@ export const updateAddress = async (id: string, userId: string, data: any) => {
 
 export const deleteAddress = async (id: string, userId: string) => {
     const addr = await prisma.address.findFirst({ where: { id, userId } });
-    if (!addr) throw new Error("Địa chỉ không tồn tại");
+    if (!addr) throw new ApiError(404, "Địa chỉ không tồn tại");
 
     return await prisma.address.delete({ where: { id } });
 };
