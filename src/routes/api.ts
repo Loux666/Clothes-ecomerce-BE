@@ -9,6 +9,7 @@ import { uploadFiles } from '../controllers/upload.controller';
 import { upload } from '../middlewares/upload.middleware';
 
 import { getAllCategoriesController, createCategoryController, updateCategoryController, deleteCategoryController } from '../controllers/CategoryController';
+import * as collectionController from '../controllers/CollectionController';
 
 // Import Middleware và Schema
 import { validateRequest } from '../middlewares/validateMiddleware';
@@ -51,6 +52,13 @@ router.get('/categories', a(getAllCategoriesController));
 router.post('/categories', verifyToken, validateRequest(createCategorySchema), a(createCategoryController));
 router.put('/categories/:id', verifyToken, validateRequest(updateCategorySchema), a(updateCategoryController));
 router.delete('/categories/:id', verifyToken, a(deleteCategoryController));
+
+// Collection
+router.get('/collections', a(collectionController.getAllCollections));
+router.post('/collections', verifyToken, a(collectionController.createCollection)); // Should add validation
+router.get('/collections/:slug', a(collectionController.getCollectionBySlug));
+router.put('/collections/:id', verifyToken, a(collectionController.updateCollection));
+router.delete('/collections/:id', verifyToken, a(collectionController.deleteCollection));
 
 // Attribute
 router.get('/attributes', verifyToken, a(getAllAttributesController));

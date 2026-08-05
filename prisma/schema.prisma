@@ -84,6 +84,22 @@ model Category {
   @@map("categories")
 }
 
+model Collection {
+  id          String   @id @default(uuid()) @db.VarChar(36)
+  name        String   @db.VarChar(255)
+  slug        String   @unique @db.VarChar(255)
+  description String?  @db.Text
+  eyebrow     String?  @db.VarChar(100)
+  imageUrl    String?  @map("image_url") @db.Text
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  products    Product[] @relation("ProductCollections")
+
+  @@map("collections")
+}
+
 model Product {
   id              String         @id @default(uuid()) @db.VarChar(36)
   categoryId      String?        @map("category_id") @db.VarChar(36)
@@ -102,6 +118,7 @@ model Product {
   updatedAt       DateTime       @updatedAt @map("updated_at")
 
   category  Category?        @relation(fields: [categoryId], references: [id])
+  collections Collection[]   @relation("ProductCollections")
   images    ProductImage[]
   variants  ProductVariant[]
   wishlists Wishlist[]

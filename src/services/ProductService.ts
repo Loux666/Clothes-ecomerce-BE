@@ -21,6 +21,9 @@ export const createProduct = async (data: CreateProductType) => {
                 gender: data.gender,
                 isFeatured: data.isFeatured,
                 tags: data.tags ?? [], // Fallback mảng rỗng nếu không có tags
+                collections: {
+                    connect: data.collectionIds ? data.collectionIds.map(id => ({ id })) : []
+                }
             }
         });
 
@@ -82,12 +85,23 @@ export const createProduct = async (data: CreateProductType) => {
     return product;
 }
 
-export const getAllProducts = async () => {
+export const getAllProducts = async (filters: any = {}) => {
+    const where: any = {};
+    if (filters.gender) where.gender = filters.gender;
+    if (filters.categoryId) where.categoryId = filters.categoryId;
+    if (filters.collectionSlug) {
+        where.collections = {
+            some: { slug: filters.collectionSlug }
+        };
+    }
+
     // Hàm này lấy toàn bộ sản phẩm và JOIN (Include) cực kỳ sâu vào các bảng con
     return await prisma.product.findMany({
+        where: where,
         include: {
             images: true, // Lấy luôn ảnh
             category: true, // Lấy luôn tên danh mục
+            collections: true, // Lấy các collection liên kết
             variants: {
                 include: {
                     images: true, // Lấy ảnh riêng của variant
@@ -112,6 +126,7 @@ export const getProductBySlug = async (slug: string) => {
         include: {
             images: true,
             category: true,
+            collections: true,
             variants: {
                 include: {
                     images: true, // Lấy ảnh riêng của variant
@@ -131,19 +146,40 @@ export const getProductBySlug = async (slug: string) => {
 }
 
 export const updateProduct = async (id: string, data: UpdateProductType) => {
-    // Note: Cập nhật cơ bản (Tên, Giá, Mô tả...). Để an toàn không update images/variants chung ở đây.
-    return await prisma.product.update({
-        where: { id: id },
-        data: {
-            name: data.name,
-            categoryId: data.categoryId,
-            description: data.description,
-            basePrice: data.basePrice,
-            salePrice: data.salePrice,
-            gender: data.gender,
-            isFeatured: data.isFeatured,
-            tags: data.tags ?? undefined
+    return await prisma.$transaction(async (tx) => {
+        const updated = await tx.product.update({
+            where: { id: id },
+            data: {
+                name: data.name,
+                categoryId: data.categoryId,
+                description: data.description,
+                basePrice: data.basePrice,
+                salePrice: data.salePrice,
+                gender: data.gender,
+                isFeatured: data.isFeatured,
+                tags: data.tags ?? undefined,
+                collections: data.collectionIds ? {
+                    set: data.collectionIds.map(id => ({ id }))
+                } : undefined
+            }
+        });
+
+        if (data.images) {
+            await tx.productImage.deleteMany({ where: { productId: id } });
+            if (data.images.length > 0) {
+                await tx.productImage.createMany({
+                    data: data.images.map(img => ({
+                        productId: id,
+                        url: img.url,
+                        altText: img.altText,
+                        sortOrder: img.sortOrder,
+                        isPrimary: img.isPrimary
+                    }))
+                });
+            }
         }
+
+        return updated;
     });
 }
 

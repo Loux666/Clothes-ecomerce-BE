@@ -30,6 +30,7 @@
     "postinstall": "prisma generate",
     "start": "ts-node src/server.ts",
     "dev": "nodemon -L --watch .env --watch src --ext ts,json,env --exec ts-node src/server.ts",
+    "seed": "ts-node src/seeder/product.seeder.ts",
     "build": "tsc"
   }
 }

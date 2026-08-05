@@ -5,7 +5,12 @@ import { ApiError } from "../utils/ApiError";
 const prisma = new PrismaClient();
 
 export const getAllProductsController = async (req: Request, res: Response) => {
-    const products = await ProductService.getAllProducts();
+    const filters = {
+        gender: req.query.gender as string,
+        categoryId: req.query.categoryId as string,
+        collectionSlug: req.query.collection as string
+    };
+    const products = await ProductService.getAllProducts(filters);
     res.status(200).json({ message: "Lấy danh sách sản phẩm thành công", data: products });
 }
 

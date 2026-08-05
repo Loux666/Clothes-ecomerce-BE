@@ -33,6 +33,7 @@ export const createProductSchema = z.object({
         gender: z.enum(["MALE", "FEMALE", "UNISEX", "KIDS"]).optional().nullable(),
         isFeatured: z.boolean().default(false),
         tags: z.array(z.string()).optional().nullable(),
+        collectionIds: z.array(z.string()).optional().nullable(),
 
         // Sản phẩm có thể có nhiều ảnh
         images: z.array(productImageSchema).optional(),

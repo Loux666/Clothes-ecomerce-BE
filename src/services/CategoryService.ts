@@ -3,21 +3,19 @@ import { ApiError } from "../utils/ApiError";
 
 
 export const getAllCategories = async () => {
-
     return await prisma.category.findMany({
-        where: {
-            parentId: null,
-            // is_active: true
-        },
         include: {
+            parent: {
+                include: {
+                    parent: true
+                }
+            },
             children: true
-
         },
         orderBy: {
             sortOrder: 'asc'
         }
-
-    })
+    });
 }
 
 export const createCategory = async (data: {
